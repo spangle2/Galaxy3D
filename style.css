@@ -131,6 +131,12 @@ button:hover {
     color: #ffcc44;
 }
 
+.system-label.habitable {
+    color: #66ff66;
+    background-color: rgba(0, 32, 0, 0.7);
+    border: 1px solid #33aa33;
+}
+
 .planet-orbit {
     opacity: 0.4;
     transition: opacity 0.3s ease;
@@ -138,4 +144,60 @@ button:hover {
 
 .planet-orbit:hover {
     opacity: 0.8;
+}
+
+/* Scientific scale indicators */
+.scale-indicator {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    color: #aaaaaa;
+    max-width: 150px;
+    pointer-events: none;
+}
+
+.scale-indicator h4 {
+    margin: 0 0 5px 0;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+/* Star class indicators */
+.star-o { color: #9bb0ff; }
+.star-b { color: #aabfff; }
+.star-a { color: #cad7ff; }
+.star-f { color: #f8f7ff; }
+.star-g { color: #fff4ea; }
+.star-k { color: #ffd2a1; }
+.star-m { color: #ffcc6f; }
+
+.habitable-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #33ff33;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+#starClassLegend {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dotted rgba(255, 255, 255, 0.2);
+    font-size: 12px;
+}
+
+#starClassLegend h4 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+#starClassLegend div {
+    margin-bottom: 3px;
+    opacity: 0.7;
 }

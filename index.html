@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procedural Universe Simulation</title>
+    <title>Universe Simulator</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/FlyControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.js"></script>
 </head>
 <body>
     <div id="info">
-        <h1>Procedural Universe</h1>
+        <h1>Universe Simulator</h1>
         <p>Use WASD to fly, mouse to look around, scroll to adjust speed</p>
-        <p class="hint">Fly close to a star to see its solar system</p>
+        <p class="hint">Fly close to a star to see its solar system (green orbits = habitable zone)</p>
     </div>
     
     <div id="controls">
@@ -29,12 +30,21 @@
             <span id="densityValue">1</span>
         </div>
         <div class="control">
+            <label for="orbitVisibility">Orbit Visibility:</label>
+            <input type="range" id="orbitVisibility" min="0" max="10" step="1" value="5">
+            <span id="orbitVisibilityValue">5</span>
+        </div>
+        <div class="control">
             <label for="showLabels">Show Labels:</label>
             <input type="checkbox" id="showLabels" checked>
         </div>
         <div class="control">
             <label for="showOrbits">Show Orbits:</label>
             <input type="checkbox" id="showOrbits" checked>
+        </div>
+        <div class="control">
+            <label for="scientificMode">Realistic Speed:</label>
+            <input type="checkbox" id="scientificMode">
         </div>
         <button id="generateNew">Generate New Universe</button>
         <button id="toggleView">Toggle View Mode</button>
@@ -43,9 +53,28 @@
             <div id="locationInfo">Universe Overview</div>
             <div id="nearbyInfo"></div>
         </div>
+        
+        <div id="starClassLegend">
+            <h4>Stellar Classification</h4>
+            <div><span class="star-o">■</span> O-class: Very hot, blue, rare</div>
+            <div><span class="star-b">■</span> B-class: Blue-white</div>
+            <div><span class="star-a">■</span> A-class: White</div>
+            <div><span class="star-f">■</span> F-class: Yellow-white</div>
+            <div><span class="star-g">■</span> G-class: Yellow (Sun-like)</div>
+            <div><span class="star-k">■</span> K-class: Orange</div>
+            <div><span class="star-m">■</span> M-class: Red, common</div>
+            <div><span class="habitable-indicator"></span> Habitable zone</div>
+        </div>
+    </div>
+    
+    <div class="scale-indicator">
+        <h4>Scientific Scale</h4>
+        <div>Galaxy diameters: ~100,000 light years</div>
+        <div>Star distances: ~light years</div>
+        <div>Planets: ~AU from stars</div>
     </div>
     
     <div id="container"></div>
-    <script src="app.js"></script>
+    <script src="fixed_app.js"></script>
 </body>
 </html>
