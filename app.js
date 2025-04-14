@@ -217,24 +217,104 @@ function createGalaxy(position, galaxyName, galaxySize, galaxyType, galaxyColor)
         // Generate system name
         const systemName = `${galaxyName.charAt(0)}${galaxyName.charAt(1)}-${Math.floor(Math.random() * 1000)}`;
         
+        // Create star system group
+        const starSystem = new THREE.Group();
+        starSystem.position.copy(systemPosition);
+        galaxy.add(starSystem);
+        
         // Create star
         const starGeometry = new THREE.SphereGeometry(systemSize, 16, 16);
         const starMaterial = new THREE.MeshBasicMaterial({ color: starColor });
         const star = new THREE.Mesh(starGeometry, starMaterial);
-        star.position.copy(systemPosition);
+        starSystem.add(star);
         
         // Add glow to star
         const starGlow = new THREE.PointLight(starColor, 0.5, galaxySize * 2);
-        starGlow.position.copy(systemPosition);
+        star.add(starGlow);
+        
+        // Determine number of planets for this system (1-8)
+        const planetCount = Math.floor(Math.random() * 8) + 1;
+        
+        // Create planet system scaled to galaxy size
+        const systemScale = 0.15; // Scale system size relative to galaxy size
+        
+        // Create planets within the star system (much smaller and closer to star)
+        for (let j = 0; j < planetCount; j++) {
+            // Scale planet sizes - very small compared to star
+            const planetSize = systemSize * (0.1 + Math.random() * 0.3);
+            const orbitRadius = systemSize * (2 + j * 1.5) * systemScale;
+            const planetColor = getRandomColor();
+            
+            // Create orbit ring
+            const orbitGeometry = new THREE.RingGeometry(orbitRadius, orbitRadius + 0.01 * systemSize, 32);
+            const orbitMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                opacity: 0.1,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+            orbit.rotation.x = Math.PI / 2;
+            starSystem.add(orbit);
+            
+            // Create planet group for orbit animation
+            const planetGroup = new THREE.Group();
+            starSystem.add(planetGroup);
+            
+            // Create planet
+            const planetGeometry = new THREE.SphereGeometry(planetSize, 8, 8);
+            const planetMaterial = new THREE.MeshBasicMaterial({ color: planetColor });
+            const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+            
+            // Position planet on orbit
+            planet.position.x = orbitRadius;
+            planetGroup.add(planet);
+            
+            // Add moon to larger planets
+            if (planetSize > systemSize * 0.2 && Math.random() > 0.5) {
+                const moonSize = planetSize * 0.3;
+                const moonDistance = planetSize * 2.5;
+                const moonGeometry = new THREE.SphereGeometry(moonSize, 6, 6);
+                const moonMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+                const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+                
+                const moonGroup = new THREE.Group();
+                planetGroup.add(moonGroup);
+                
+                moon.position.x = moonDistance;
+                moonGroup.add(moon);
+                
+                // Random rotation for moon orbit
+                moonGroup.rotation.y = Math.random() * Math.PI * 2;
+                moonGroup.rotation.x = Math.random() * Math.PI / 4;
+                
+                // Add moon orbit data
+                moonGroup.userData = {
+                    type: 'moon-orbit',
+                    rotationSpeed: 0.03 + Math.random() * 0.02
+                };
+            }
+            
+            // Random initial rotation for planet orbit
+            planetGroup.rotation.y = Math.random() * Math.PI * 2;
+            
+            // Add orbit data
+            planetGroup.userData = {
+                type: 'planet-orbit',
+                rotationSpeed: 0.01 / (j + 1), // Outer planets move slower
+                planetIndex: j
+            };
+        }
         
         // Add system data
-        star.userData = {
+        starSystem.userData = {
             name: systemName,
             type: Math.random() > 0.7 ? 'binary' : 'single',
-            planets: Math.floor(Math.random() * 10),
+            planets: planetCount,
             age: Math.floor(Math.random() * 10) + 1 + ' billion years',
             color: starColor,
-            radius: systemSize
+            radius: systemSize,
+            systemType: 'star-system'
         };
         
         // Add star system label if enabled
@@ -245,17 +325,15 @@ function createGalaxy(position, galaxyName, galaxySize, galaxyType, galaxyColor)
             labelDiv.style.display = 'none'; // Hidden by default, shown on zoom
             const label = new CSS2DObject(labelDiv);
             label.position.set(0, systemSize * 1.5, 0);
-            star.add(label);
+            starSystem.add(label);
         }
         
-        galaxy.add(star);
-        galaxy.add(starGlow);
-        
-        systems.push(star);
+        systems.push(starSystem);
         galaxy.userData.systems.push({
-            mesh: star,
+            mesh: starSystem,
             name: systemName,
-            position: systemPosition.clone()
+            position: systemPosition.clone(),
+            planetCount: planetCount
         });
     }
     
@@ -378,16 +456,93 @@ function animate() {
         orbitControls.update();
     }
     
+    // Check if we're close to any star system and display its info
+    if (currentView === 'universe') {
+        // Reset nearby info initially
+        document.getElementById('nearbyInfo').innerHTML = '';
+        
+        let closestSystem = null;
+        let closestDistance = Infinity;
+        
+        // Check for nearby systems
+        universe.children.forEach(galaxy => {
+            if (!galaxy.visible) return;
+            
+            galaxy.children.forEach(child => {
+                if (child.userData && child.userData.systemType === 'star-system') {
+                    // Calculate absolute position of the system in the universe
+                    const systemWorldPos = child.position.clone().add(galaxy.position);
+                    const distToSystem = camera.position.distanceTo(systemWorldPos);
+                    
+                    // Update closest system
+                    if (distToSystem < closestDistance && distToSystem < 500) {
+                        closestSystem = child;
+                        closestDistance = distToSystem;
+                    }
+                    
+                    // Show orbits based on distance and checkbox
+                    const showOrbits = document.getElementById('showOrbits').checked;
+                    const isClose = distToSystem < 500;
+                    
+                    // Make planets and orbits visible based on settings
+                    child.children.forEach(systemChild => {
+                        // Handle visibility of orbits and planets
+                        if (systemChild.userData && systemChild.userData.type === 'planet-orbit') {
+                            systemChild.visible = isClose && showOrbits;
+                        }
+                        
+                        // Handle visibility of orbit rings
+                        if (systemChild.geometry instanceof THREE.RingGeometry) {
+                            systemChild.visible = isClose && showOrbits;
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Display information about the closest system
+        if (closestSystem) {
+            const systemInfo = closestSystem.userData;
+            document.getElementById('nearbyInfo').innerHTML = `
+                <strong>Nearby System: ${systemInfo.name}</strong><br>
+                Type: ${systemInfo.type} star system<br>
+                Planets: ${systemInfo.planets}<br>
+                Age: ${systemInfo.age}
+            `;
+        }
+    }
+    
     // Animate star systems in current universe view
     if (currentView === 'universe' && universe) {
         universe.children.forEach(galaxy => {
             galaxy.rotation.y += 0.0001;
             
             // Animate systems within the galaxy (if we're currently viewing it)
-            if (galaxy.visible && camera.position.distanceTo(galaxy.position) < 3000) {
-                galaxy.children.forEach(child => {
-                    if (child.userData && child.userData.type === 'system') {
-                        child.rotation.y += 0.01;
+            if (galaxy.visible && camera.position.distanceTo(galaxy.position) < 5000) {
+                galaxy.children.forEach(childSystem => {
+                    // Animate planetary systems when close enough
+                    if (childSystem.userData && childSystem.userData.systemType === 'star-system') {
+                        // Only animate planetary systems when we're close enough
+                        const distToSystem = camera.position.distanceTo(childSystem.position.clone().add(galaxy.position));
+                        const isClose = distToSystem < 1000;
+                        
+                        // Make orbits and planets visible only when close
+                        childSystem.children.forEach(child => {
+                            // Skip the star and labels
+                            if (child instanceof CSS2DObject || child.userData === undefined) return;
+                            
+                            // For planet orbit groups, rotate them and make them visible when close
+                            if (child.userData.type === 'planet-orbit') {
+                                child.rotation.y += child.userData.rotationSpeed;
+                                
+                                // Animate moons if they exist
+                                child.children.forEach(planetChild => {
+                                    if (planetChild.userData && planetChild.userData.type === 'moon-orbit') {
+                                        planetChild.rotation.y += planetChild.userData.rotationSpeed;
+                                    }
+                                });
+                            }
+                        });
                     }
                 });
             }
@@ -425,11 +580,14 @@ function animate() {
                     child.element.style.display = distToGalaxy > 500 ? 'block' : 'none';
                 }
                 
-                // Show system labels only when close
-                if (child instanceof THREE.Mesh && child.children) {
-                    child.children.forEach(grandchild => {
-                        if (grandchild instanceof CSS2DObject && grandchild.element.classList.contains('system-label')) {
-                            grandchild.element.style.display = distToGalaxy < 1000 ? 'block' : 'none';
+                // For star systems, handle their labels
+                if (child.userData && child.userData.systemType === 'star-system') {
+                    const distToSystem = camera.position.distanceTo(child.position.clone().add(galaxy.position));
+                    
+                    // Show star system labels only when close enough
+                    child.children.forEach(systemChild => {
+                        if (systemChild instanceof CSS2DObject && systemChild.element.classList.contains('system-label')) {
+                            systemChild.element.style.display = distToSystem < 500 ? 'block' : 'none';
                         }
                     });
                 }
@@ -619,6 +777,11 @@ document.getElementById('galaxyCount').addEventListener('input', function(e) {
 
 document.getElementById('density').addEventListener('input', function(e) {
     document.getElementById('densityValue').textContent = e.target.value;
+});
+
+// Toggle orbits visibility
+document.getElementById('showOrbits').addEventListener('change', function() {
+    // Visibility will be handled in the animation loop
 });
 
 // Handle window resize

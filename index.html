@@ -14,6 +14,7 @@
     <div id="info">
         <h1>Procedural Universe</h1>
         <p>Use WASD to fly, mouse to look around, scroll to adjust speed</p>
+        <p class="hint">Fly close to a star to see its solar system</p>
     </div>
     
     <div id="controls">
@@ -31,11 +32,16 @@
             <label for="showLabels">Show Labels:</label>
             <input type="checkbox" id="showLabels" checked>
         </div>
+        <div class="control">
+            <label for="showOrbits">Show Orbits:</label>
+            <input type="checkbox" id="showOrbits" checked>
+        </div>
         <button id="generateNew">Generate New Universe</button>
         <button id="toggleView">Toggle View Mode</button>
         <div id="infoPanel">
             <h3>Current Location</h3>
             <div id="locationInfo">Universe Overview</div>
+            <div id="nearbyInfo"></div>
         </div>
     </div>
     
